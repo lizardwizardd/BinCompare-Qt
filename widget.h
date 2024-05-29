@@ -33,8 +33,8 @@ private slots:
     void updateStatusBar(const QString& message);
 
 private:
-    QLineEdit* dirPath1 = nullptr;
-    QLineEdit* dirPath2 = nullptr;
+    QLineEdit* dirPathEdit1 = nullptr;
+    QLineEdit* dirPathEdit2 = nullptr;
     QPushButton* browseButton1 = nullptr;
     QPushButton* browseButton2 = nullptr;
     QTreeView* fileTable1 = nullptr;
@@ -43,6 +43,9 @@ private:
     QStatusBar* statusBar = nullptr;
     QProgressBar* progressBar = nullptr;
     QCompleter* pathCompleter = nullptr;
+
+    QString lastDirPath1;
+    QString lastDirPath2;
 };
 
 #endif // WIDGET_H

@@ -11,6 +11,11 @@ Widget::Widget(QWidget *parent)
 {
     this->setMinimumSize(520, 400);
 
+    lastDirPath1 = QDir::toNativeSeparators
+        (QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation));
+    lastDirPath2 = QDir::toNativeSeparators
+        (QStandardPaths::writableLocation(QStandardPaths::DownloadLocation));
+
     // MENU BAR
     QMenuBar *menuBar = new QMenuBar(this);
     QMenu *fileMenu = new QMenu(tr("&Program"), this);
@@ -27,27 +32,25 @@ Widget::Widget(QWidget *parent)
     // Setup path completer
     pathCompleter = new QCompleter(this);
     QFileSystemModel* fsModel = new QFileSystemModel(pathCompleter);
-    QString documentsPath = QDir::toNativeSeparators
-        (QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation));
-    QString downloadPath = QDir::toNativeSeparators
-        (QStandardPaths::writableLocation(QStandardPaths::DownloadLocation));
-    fsModel->setRootPath(documentsPath);
+    fsModel->setRootPath(lastDirPath1);
     fsModel->setFilter(QDir::Dirs | QDir::Drives | QDir::NoDotAndDotDot);
     pathCompleter->setMaxVisibleItems(10);
     pathCompleter->setModel(fsModel);
 
     // Dir path 1
-    dirPath1 = new QLineEdit(this);
-    dirPath1->setText(documentsPath);
+    lastDirPath1 = QDir::toNativeSeparators
+        (QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation));
+    dirPathEdit1 = new QLineEdit(this);
+    dirPathEdit1->setText(lastDirPath1);
     //dirPath1->setReadOnly(true);
-    dirPath1->setCompleter(pathCompleter);
+    dirPathEdit1->setCompleter(pathCompleter);
     browseButton1 = new QPushButton(tr("Browse"), this);
     browseButton1->setMaximumWidth(60);
 
     // Dir path 2
-    dirPath2 = new QLineEdit(this);
-    dirPath2->setText(downloadPath);
-    dirPath2->setCompleter(pathCompleter);
+    dirPathEdit2 = new QLineEdit(this);
+    dirPathEdit2->setText(lastDirPath2);
+    dirPathEdit2->setCompleter(pathCompleter);
     browseButton2 = new QPushButton(tr("Browse"), this);
     browseButton2->setMaximumWidth(60);
 
@@ -55,11 +58,13 @@ Widget::Widget(QWidget *parent)
     fileTable1 = new QTreeView(this);
     fileTable1->setRootIsDecorated(false);
     fileTable1->setAlternatingRowColors(true);
+    fileTable1->setEditTriggers(QAbstractItemView::NoEditTriggers);
 
     // FILE TABLE 2
     fileTable2 = new QTreeView;
     fileTable2->setRootIsDecorated(false);
     fileTable2->setAlternatingRowColors(true);
+    fileTable2->setEditTriggers(QAbstractItemView::NoEditTriggers);
 
     // DUPLICATES TABLE
     resultTable = new QTreeView;
@@ -71,15 +76,15 @@ Widget::Widget(QWidget *parent)
     progressBar = new QProgressBar(this);
     progressBar->setRange(0, 100);
     progressBar->setValue(0);
-    progressBar->setMaximumSize(200, 18);
+    progressBar->setMaximumSize(150, 16);
     progressBar->setFormat("");
     statusBar->addPermanentWidget(progressBar);
 
     // LAYOUTS
     QHBoxLayout* dirBrowseLayoutH = new QHBoxLayout();
-    dirBrowseLayoutH->addWidget(dirPath1);
+    dirBrowseLayoutH->addWidget(dirPathEdit1);
     dirBrowseLayoutH->addWidget(browseButton1);
-    dirBrowseLayoutH->addWidget(dirPath2);
+    dirBrowseLayoutH->addWidget(dirPathEdit2);
     dirBrowseLayoutH->addWidget(browseButton2);
 
     QVBoxLayout* dirBrowseLayoutV = new QVBoxLayout();
@@ -100,24 +105,50 @@ Widget::Widget(QWidget *parent)
     setLayout(mainLayout);
 
     // CONNECTS
+    // Update table after choosing directory
     connect(browseButton1, &QPushButton::clicked, this, [this]() {
-        browseDirectory(dirPath1, dirPath1->text());
-        fileTable1->setModel(updateFileTable(dirPath1->text()));
+        browseDirectory(dirPathEdit1, dirPathEdit1->text());
+        fileTable1->setModel(updateFileTable(dirPathEdit1->text()));
+        lastDirPath1 = dirPathEdit1->text();
     });
     connect(browseButton2, &QPushButton::clicked, this, [this]() {
-        browseDirectory(dirPath2, dirPath2->text());
-        fileTable2->setModel(updateFileTable(dirPath2->text()));
+        browseDirectory(dirPathEdit2, dirPathEdit2->text());
+        fileTable2->setModel(updateFileTable(dirPathEdit2->text()));
+        lastDirPath2 = dirPathEdit2->text();
     });
+
+    // Update table after editing directory path
+    connect(dirPathEdit1, &QLineEdit::textEdited, this, [this]() {
+        fileTable1->setModel(updateFileTable(dirPathEdit1->text()));
+        lastDirPath1 = dirPathEdit1->text();
+    });
+    connect(dirPathEdit2, &QLineEdit::textEdited, this, [this]() {
+        fileTable2->setModel(updateFileTable(dirPathEdit2->text()));
+        lastDirPath2 = dirPathEdit2->text();
+    });
+
+    // Update table after "Enter" is pressed in directory path
+    connect(dirPathEdit1, &QLineEdit::returnPressed, this, [this]() {
+        fileTable1->setModel(updateFileTable(dirPathEdit1->text()));
+        lastDirPath1 = dirPathEdit1->text();
+    });
+    connect(dirPathEdit2, &QLineEdit::returnPressed, this, [this]() {
+        fileTable2->setModel(updateFileTable(dirPathEdit2->text()));
+        lastDirPath2 = dirPathEdit2->text();
+    });
+
     connect(exitAction, &QAction::triggered, this, &QWidget::close);
 
     // INITIALIZE TABLES
-    fileTable1->setModel(updateFileTable(dirPath1->text()));
+    fileTable1->setModel(updateFileTable(dirPathEdit1->text()));
     fileTable1->header()->resizeSection(0, 190);
     fileTable1->header()->resizeSection(1, 45);
 
-    fileTable2->setModel(updateFileTable(dirPath2->text()));
+    fileTable2->setModel(updateFileTable(dirPathEdit2->text()));
     fileTable2->header()->resizeSection(0, 190);
     fileTable2->header()->resizeSection(1, 45);
+
+    updateStatusBar(tr("Ready"));
 }
 
 void Widget::browseDirectory(QLineEdit* lineEdit, const QString& startDir)
