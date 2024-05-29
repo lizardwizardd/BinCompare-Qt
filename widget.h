@@ -16,6 +16,8 @@
 #include <QCompleter>
 #include <QFileSystemModel>
 #include <QStandardPaths>
+#include <QTreeView>
+#include <QAbstractTableModel>
 
 class Widget : public QWidget
 {
@@ -25,20 +27,22 @@ public:
     Widget(QWidget *parent = nullptr);
     ~Widget() = default;
 
+private slots:
+    void browseDirectory(QLineEdit* lineEdit, const QString& startDir);
+    QAbstractItemModel* updateFileTable(const QString& dirPath);
+    void updateStatusBar(const QString& message);
+
 private:
     QLineEdit* dirPath1 = nullptr;
     QLineEdit* dirPath2 = nullptr;
     QPushButton* browseButton1 = nullptr;
     QPushButton* browseButton2 = nullptr;
-    QTableWidget* fileTable1 = nullptr;
-    QTableWidget* fileTable2 = nullptr;
-    QTableWidget* resultTable = nullptr;
+    QTreeView* fileTable1 = nullptr;
+    QTreeView* fileTable2 = nullptr;
+    QTreeView* resultTable = nullptr;
     QStatusBar* statusBar = nullptr;
     QProgressBar* progressBar = nullptr;
     QCompleter* pathCompleter = nullptr;
-
-private slots:
-    void browseDirectory(QLineEdit* lineEdit, const QString& startDir);
 };
 
 #endif // WIDGET_H
