@@ -20,7 +20,6 @@ set(PROJECT_SOURCES
         dircompare.cpp
 
         widget.h
-        xxhash32.h
         dircompare.h
 
         ${TS_FILES}

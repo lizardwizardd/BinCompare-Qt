@@ -13,12 +13,7 @@
 #include <QDebug>
 
 
-DirCompare::DirCompare(int seed) :
-    hasher(seed)
-{}
-
-DirCompare::DirCompare(const QString& dirPath1, const QString& dirPath2, int seed) :
-    hasher(seed)
+DirCompare::DirCompare(const QString &dirPath1, const QString &dirPath2)
 {
     readDirs(dirPath1, dirPath2);
 }
@@ -40,49 +35,6 @@ void DirCompare::readDirs(const QString &dirPath1, const QString &dirPath2)
         QFileInfo fileInfo = it2.fileInfo();
         dirFiles2.emplace_back(fileInfo.absoluteFilePath(), fileInfo.size());
     }
-}
-
-QVector<QPair<QVector<QString>, size_t>> DirCompare::findDuplicatesByHash()
-{
-    QVector<QPair<QVector<QString>, size_t>> duplicates;
-    std::unordered_map<size_t, QVector<QString>> sizeGroups;
-
-    // Сгруппировать по размерам
-    for (const auto& file : dirFiles1)
-        sizeGroups[file.second].append(file.first);
-
-    for (const auto& file : dirFiles2)
-        sizeGroups[file.second].append(file.first);
-
-    // Подсчитать хэши файлов для каждой группы с >1 файлов
-    for (const auto& sizeGroupEntry : sizeGroups)
-    {
-        if (sizeGroupEntry.second.size() < 2)
-            continue;
-
-        std::unordered_map<uint32_t, QVector<QString>> hashGroups;
-
-        // Сгруппировать файлы с одинкавым хэшем
-        for (const auto& file : sizeGroupEntry.second)
-        {
-            uint32_t fileHash = calculateFileHash(file);
-            if (fileHash != 0)
-            {
-                hashGroups[fileHash].append(file);
-            }
-        }
-
-        // Внести группы в duplicates
-        for (const auto& hashEntry : hashGroups)
-        {
-            if (hashEntry.second.size() > 1)
-            {
-                duplicates.emplace_back(hashEntry.second, sizeGroupEntry.first);
-            }
-        }
-    }
-
-    return duplicates;
 }
 
 QVector<QPair<QVector<QString>, size_t>> DirCompare::findDuplicatesByBinary()
@@ -107,31 +59,6 @@ QVector<QPair<QVector<QString>, size_t>> DirCompare::findDuplicatesByBinary()
     return duplicates;
 }
 
-uint32_t DirCompare::calculateFileHash(const QString& filePath)
-{
-    QFile file(filePath);
-    if (!file.open(QIODevice::ReadOnly))
-    {
-        qDebug() << "Error opening file" << filePath;
-        return 0;
-    }
-
-    char buffer[bufferSize];
-
-    while (!file.atEnd())
-    {
-        qint64 bytesRead = file.read(buffer, bufferSize);
-        if (bytesRead > 0)
-        {
-            hasher.add(buffer, static_cast<uint64_t>(bytesRead));
-        }
-    }
-
-    file.close();
-
-    return hasher.hash();
-}
-
 bool DirCompare::compareFilesBinary(const QString &filePath1, const QString &filePath2)
 {
     QFile file1(filePath1);
@@ -139,7 +66,7 @@ bool DirCompare::compareFilesBinary(const QString &filePath1, const QString &fil
 
     if (!file1.open(QIODevice::ReadOnly) || !file2.open(QIODevice::ReadOnly))
     {
-        qDebug() << "Error opening file for comparison";
+        qDebug() << "Error opening file";
         return false;
     }
 

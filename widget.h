@@ -1,5 +1,4 @@
-#ifndef WIDGET_H
-#define WIDGET_H
+#pragma once
 
 #include <QWidget>
 #include <QLineEdit>
@@ -20,6 +19,7 @@
 #include <QAbstractTableModel>
 #include <QRadioButton>
 
+
 class Widget : public QWidget
 {
     Q_OBJECT
@@ -31,6 +31,8 @@ public:
 private slots:
     void browseDirectory(QLineEdit* lineEdit, const QString& startDir);
     QAbstractItemModel* updateFileTable(const QString& dirPath);
+    QAbstractItemModel* updateDuplicatesTable(const QVector<QPair<QVector<QString>, size_t>>& duplicates);
+
     void updateStatusBar(const QString& message);
     void searchForDuplicates();
 
@@ -42,8 +44,6 @@ private:
     QTreeView* fileTable1 = nullptr;
     QTreeView* fileTable2 = nullptr;
     QPushButton* startSearchButton = nullptr;
-    QRadioButton* searchByHashRadio = nullptr;
-    QRadioButton* searchByBinaryRadio = nullptr;
     QTreeView* resultTable = nullptr;
     QStatusBar* statusBar = nullptr;
     QProgressBar* progressBar = nullptr;
@@ -51,8 +51,4 @@ private:
 
     QString lastDirPath1;
     QString lastDirPath2;
-
-    int scanMode = 1; // 1 - hash, 2 - binary
 };
-
-#endif // WIDGET_H

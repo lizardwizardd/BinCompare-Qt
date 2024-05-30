@@ -21,12 +21,13 @@ Widget::Widget(QWidget *parent)
     // MENU BAR
     QMenuBar *menuBar = new QMenuBar(this);
     QMenu *fileMenu = new QMenu(tr("&Program"), this);
-    QMenu *settingsMenu = new QMenu(tr("&Settings"), this);
+    QMenu *settingsMenu = new QMenu(tr("&Settings"), this); // todo auto update
     menuBar->addMenu(fileMenu);
     menuBar->addMenu(settingsMenu);
 
     QAction *exitAction = new QAction(tr("&Exit"), this);
     fileMenu->addAction(exitAction);
+
 
     // DIR PATHS SELECTION
     QLabel* dirPathLabel = new QLabel(tr("Enter paths or browse for directories"), this);
@@ -70,9 +71,6 @@ Widget::Widget(QWidget *parent)
 
     // DUPLICATE TABLE CONTROLS
     startSearchButton = new QPushButton("Scan for duplicates", this);
-    searchByHashRadio = new QRadioButton("Hash", this);
-    searchByBinaryRadio = new QRadioButton("Binary", this);
-    searchByHashRadio->toggle();
     startSearchButton->setMinimumWidth(150);
 
     // DUPLICATES TABLE
@@ -105,11 +103,7 @@ Widget::Widget(QWidget *parent)
     fileTablesLayout->addWidget(fileTable2);
 
     QHBoxLayout* duplicateControlsLayout = new QHBoxLayout();
-    QSpacerItem* spacerItem = new QSpacerItem(0, 0, QSizePolicy::Expanding, QSizePolicy::Fixed);
     duplicateControlsLayout->addWidget(startSearchButton);
-    duplicateControlsLayout->addItem(spacerItem);
-    duplicateControlsLayout->addWidget(searchByHashRadio);
-    duplicateControlsLayout->addWidget(searchByBinaryRadio);
     duplicateControlsLayout->addStretch();
 
     QVBoxLayout* mainLayout = new QVBoxLayout();
@@ -155,14 +149,6 @@ Widget::Widget(QWidget *parent)
         lastDirPath2 = dirPathEdit2->text();
     });
 
-    // Обновить тип сканирования
-    connect(searchByHashRadio, &QRadioButton::clicked, this, [this]() {
-        scanMode = 1;
-    });
-    connect(searchByBinaryRadio, &QRadioButton::clicked, this, [this]() {
-        scanMode = 2;
-    });
-
     // Начать сканирование
     connect(startSearchButton, &QPushButton::clicked, this, [this]() {
         searchForDuplicates();
@@ -178,6 +164,11 @@ Widget::Widget(QWidget *parent)
     fileTable2->setModel(updateFileTable(dirPathEdit2->text()));
     fileTable2->header()->resizeSection(0, 190);
     fileTable2->header()->resizeSection(1, 45);
+
+    searchForDuplicates();
+    resultTable->header()->resizeSection(0, 225);
+    resultTable->header()->resizeSection(1, 225);
+    resultTable->header()->resizeSection(2, 45);
 
     updateStatusBar(tr("Ready"));
 }
@@ -214,7 +205,36 @@ QAbstractItemModel* Widget::updateFileTable(const QString& dirPath)
         model->setData(model->index(row, 1), fileInfo.size());
     }
 
-    updateStatusBar(tr("Found %1 files in %2").arg(model->rowCount()).arg(dirPath));
+    updateStatusBar(tr("%1 files in %2").arg(model->rowCount()).arg(dirPath));
+
+    return model;
+}
+
+QAbstractItemModel *Widget::updateDuplicatesTable(const QVector<QPair<QVector<QString>, size_t>> &duplicates)
+{
+    QStandardItemModel *model = new QStandardItemModel(0, 3, this);
+    model->setHeaderData(0, Qt::Horizontal, QObject::tr("File 1"));
+    model->setHeaderData(1, Qt::Horizontal, QObject::tr("File 2"));
+    model->setHeaderData(2, Qt::Horizontal, QObject::tr("Size"));
+
+    for (const auto& duplicatePair : duplicates)
+    {
+        const QVector<QString>& filePaths = duplicatePair.first;
+        size_t fileSize = duplicatePair.second;
+
+        if (filePaths.size() < 2)
+            continue;
+
+        int row = model->rowCount();
+        model->insertRow(row);
+
+        QString file1 = filePaths[0].split("/").back();
+        QString file2 = filePaths[1].split("/").back();
+
+        model->setData(model->index(row, 0), file1);
+        model->setData(model->index(row, 1), file2);
+        model->setData(model->index(row, 2), static_cast<qlonglong>(fileSize));
+    }
 
     return model;
 }
@@ -231,10 +251,8 @@ void Widget::searchForDuplicates()
     QVector<QPair<QVector<QString>, size_t>> duplicates;
 
     DirCompare comparator(lastDirPath1, lastDirPath2);
-    if (scanMode == 1)
-        duplicates = comparator.findDuplicatesByHash();
-    if (scanMode == 2)
-        duplicates = comparator.findDuplicatesByBinary();
+    duplicates = comparator.findDuplicatesByBinary();
+    resultTable->setModel(updateDuplicatesTable(duplicates));
 
     updateStatusBar(tr("Found %1 duplicate files").arg(duplicates.size()));
 }
