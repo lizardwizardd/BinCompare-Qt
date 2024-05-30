@@ -1,4 +1,4 @@
-#include "widget.h"
+#include "../inc/widget.h"
 
 #include <QCommonStyle>
 #include <QLabel>
@@ -6,7 +6,8 @@
 #include <QFileDialog>
 #include <QStandardItemModel>
 
-#include "dircompare.h"
+#include "../inc/dircompare.h"
+
 
 Widget::Widget(QWidget *parent)
     : QWidget(parent)
@@ -254,5 +255,5 @@ void Widget::searchForDuplicates()
     duplicates = comparator.findDuplicatesByBinary();
     resultTable->setModel(updateDuplicatesTable(duplicates));
 
-    updateStatusBar(tr("Found %1 duplicate files").arg(duplicates.size()));
+    updateStatusBar(tr("Found %1 pairs of duplicate files").arg(duplicates.size()));
 }

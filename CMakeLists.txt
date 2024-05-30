@@ -15,14 +15,14 @@ find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets LinguistTools)
 set(TS_FILES BinCompare_ru_RU.ts)
 
 set(PROJECT_SOURCES
-        main.cpp
-        widget.cpp
-        dircompare.cpp
+        src/main.cpp
+        src/widget.cpp
+        src/dircompare.cpp
 
-        widget.h
-        dircompare.h
+        inc/widget.h
+        inc/dircompare.h
 
-        ${TS_FILES}
+        ts/${TS_FILES}
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)

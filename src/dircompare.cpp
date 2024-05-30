@@ -1,4 +1,4 @@
-#include "dircompare.h"
+#include "../inc/dircompare.h"
 
 #include <iostream>
 #include <fstream>
