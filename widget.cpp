@@ -6,10 +6,12 @@
 #include <QFileDialog>
 #include <QStandardItemModel>
 
+#include "dircompare.h"
+
 Widget::Widget(QWidget *parent)
     : QWidget(parent)
 {
-    this->setMinimumSize(535, 400);
+    this->setMinimumSize(540, 400);
 
     lastDirPath1 = QDir::toNativeSeparators
         (QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation));
@@ -153,6 +155,19 @@ Widget::Widget(QWidget *parent)
         lastDirPath2 = dirPathEdit2->text();
     });
 
+    // Обновить тип сканирования
+    connect(searchByHashRadio, &QRadioButton::clicked, this, [this]() {
+        scanMode = 1;
+    });
+    connect(searchByBinaryRadio, &QRadioButton::clicked, this, [this]() {
+        scanMode = 2;
+    });
+
+    // Начать сканирование
+    connect(startSearchButton, &QPushButton::clicked, this, [this]() {
+        searchForDuplicates();
+    });
+
     connect(exitAction, &QAction::triggered, this, &QWidget::close);
 
     // INITIALIZE TABLES
@@ -207,4 +222,19 @@ QAbstractItemModel* Widget::updateFileTable(const QString& dirPath)
 void Widget::updateStatusBar(const QString &message)
 {
     statusBar->showMessage(message);
+}
+
+void Widget::searchForDuplicates()
+{
+    updateStatusBar(tr("Scanning for duplicate files..."));
+
+    QVector<QPair<QVector<QString>, size_t>> duplicates;
+
+    DirCompare comparator(lastDirPath1, lastDirPath2);
+    if (scanMode == 1)
+        duplicates = comparator.findDuplicatesByHash();
+    if (scanMode == 2)
+        duplicates = comparator.findDuplicatesByBinary();
+
+    updateStatusBar(tr("Found %1 duplicate files").arg(duplicates.size()));
 }

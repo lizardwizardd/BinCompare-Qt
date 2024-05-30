@@ -32,6 +32,7 @@ private slots:
     void browseDirectory(QLineEdit* lineEdit, const QString& startDir);
     QAbstractItemModel* updateFileTable(const QString& dirPath);
     void updateStatusBar(const QString& message);
+    void searchForDuplicates();
 
 private:
     QLineEdit* dirPathEdit1 = nullptr;

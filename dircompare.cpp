@@ -6,9 +6,12 @@
 
 #include <QDirIterator>
 #include <QDir>
+#include <QFile>
+#include <QDataStream>
 #include <QString>
 #include <QException>
 #include <QDebug>
+
 
 DirCompare::DirCompare(int seed) :
     hasher(seed)
@@ -106,19 +109,18 @@ QVector<QPair<QVector<QString>, size_t>> DirCompare::findDuplicatesByBinary()
 
 uint32_t DirCompare::calculateFileHash(const QString& filePath)
 {
-    std::ifstream file(filePath.toStdString(), std::ios::binary);
-    if (!file.is_open())
+    QFile file(filePath);
+    if (!file.open(QIODevice::ReadOnly))
     {
-        qDebug() << "Error opening file";
+        qDebug() << "Error opening file" << filePath;
         return 0;
     }
 
     char buffer[bufferSize];
 
-    while (file.good())
+    while (!file.atEnd())
     {
-        file.read(buffer, bufferSize);
-        std::streamsize bytesRead = file.gcount();
+        qint64 bytesRead = file.read(buffer, bufferSize);
         if (bytesRead > 0)
         {
             hasher.add(buffer, static_cast<uint64_t>(bytesRead));
@@ -132,9 +134,10 @@ uint32_t DirCompare::calculateFileHash(const QString& filePath)
 
 bool DirCompare::compareFilesBinary(const QString &filePath1, const QString &filePath2)
 {
-    std::ifstream file1(filePath1.toStdString(), std::ios::binary);
-    std::ifstream file2(filePath2.toStdString(), std::ios::binary);
-    if (!file1.is_open() || !file2.is_open())
+    QFile file1(filePath1);
+    QFile file2(filePath2);
+
+    if (!file1.open(QIODevice::ReadOnly) || !file2.open(QIODevice::ReadOnly))
     {
         qDebug() << "Error opening file for comparison";
         return false;
@@ -143,12 +146,10 @@ bool DirCompare::compareFilesBinary(const QString &filePath1, const QString &fil
     char buffer1[bufferSize];
     char buffer2[bufferSize];
 
-    while (file1.good() && file2.good())
+    while (!file1.atEnd() && !file2.atEnd())
     {
-        file1.read(buffer1, bufferSize);
-        file2.read(buffer2, bufferSize);
-        std::streamsize bytesRead1 = file1.gcount();
-        std::streamsize bytesRead2 = file2.gcount();
+        qint64 bytesRead1 = file1.read(buffer1, bufferSize);
+        qint64 bytesRead2 = file2.read(buffer2, bufferSize);
 
         if (bytesRead1 != bytesRead2 || memcmp(buffer1, buffer2, bytesRead1) != 0)
         {
@@ -156,5 +157,5 @@ bool DirCompare::compareFilesBinary(const QString &filePath1, const QString &fil
         }
     }
 
-    return file1.eof() && file2.eof();
+    return file1.atEnd() && file2.atEnd();
 }
