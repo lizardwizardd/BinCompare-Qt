@@ -9,7 +9,7 @@
 Widget::Widget(QWidget *parent)
     : QWidget(parent)
 {
-    this->setMinimumSize(520, 400);
+    this->setMinimumSize(535, 400);
 
     lastDirPath1 = QDir::toNativeSeparators
         (QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation));
@@ -66,6 +66,13 @@ Widget::Widget(QWidget *parent)
     fileTable2->setAlternatingRowColors(true);
     fileTable2->setEditTriggers(QAbstractItemView::NoEditTriggers);
 
+    // DUPLICATE TABLE CONTROLS
+    startSearchButton = new QPushButton("Scan for duplicates", this);
+    searchByHashRadio = new QRadioButton("Hash", this);
+    searchByBinaryRadio = new QRadioButton("Binary", this);
+    searchByHashRadio->toggle();
+    startSearchButton->setMinimumWidth(150);
+
     // DUPLICATES TABLE
     resultTable = new QTreeView;
     resultTable->setRootIsDecorated(false);
@@ -95,17 +102,26 @@ Widget::Widget(QWidget *parent)
     fileTablesLayout->addWidget(fileTable1);
     fileTablesLayout->addWidget(fileTable2);
 
+    QHBoxLayout* duplicateControlsLayout = new QHBoxLayout();
+    QSpacerItem* spacerItem = new QSpacerItem(0, 0, QSizePolicy::Expanding, QSizePolicy::Fixed);
+    duplicateControlsLayout->addWidget(startSearchButton);
+    duplicateControlsLayout->addItem(spacerItem);
+    duplicateControlsLayout->addWidget(searchByHashRadio);
+    duplicateControlsLayout->addWidget(searchByBinaryRadio);
+    duplicateControlsLayout->addStretch();
+
     QVBoxLayout* mainLayout = new QVBoxLayout();
     mainLayout->setMenuBar(menuBar);
     mainLayout->addLayout(dirBrowseLayoutV);
-    mainLayout->addLayout(fileTablesLayout);
-    mainLayout->addWidget(resultTable);
+    mainLayout->addLayout(fileTablesLayout, 2);
+    mainLayout->addLayout(duplicateControlsLayout);
+    mainLayout->addWidget(resultTable, 3);
     mainLayout->addWidget(statusBar);
 
     setLayout(mainLayout);
 
     // CONNECTS
-    // Update table after choosing directory
+    // Обновить список файлов при выборе директории
     connect(browseButton1, &QPushButton::clicked, this, [this]() {
         browseDirectory(dirPathEdit1, dirPathEdit1->text());
         fileTable1->setModel(updateFileTable(dirPathEdit1->text()));
@@ -117,7 +133,7 @@ Widget::Widget(QWidget *parent)
         lastDirPath2 = dirPathEdit2->text();
     });
 
-    // Update table after editing directory path
+    // Обновить список файлов при изменении пути
     connect(dirPathEdit1, &QLineEdit::textEdited, this, [this]() {
         fileTable1->setModel(updateFileTable(dirPathEdit1->text()));
         lastDirPath1 = dirPathEdit1->text();
@@ -127,7 +143,7 @@ Widget::Widget(QWidget *parent)
         lastDirPath2 = dirPathEdit2->text();
     });
 
-    // Update table after "Enter" is pressed in directory path
+    // Обновить список файлов при нажатии Enter
     connect(dirPathEdit1, &QLineEdit::returnPressed, this, [this]() {
         fileTable1->setModel(updateFileTable(dirPathEdit1->text()));
         lastDirPath1 = dirPathEdit1->text();

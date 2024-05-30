@@ -18,6 +18,7 @@
 #include <QStandardPaths>
 #include <QTreeView>
 #include <QAbstractTableModel>
+#include <QRadioButton>
 
 class Widget : public QWidget
 {
@@ -39,6 +40,9 @@ private:
     QPushButton* browseButton2 = nullptr;
     QTreeView* fileTable1 = nullptr;
     QTreeView* fileTable2 = nullptr;
+    QPushButton* startSearchButton = nullptr;
+    QRadioButton* searchByHashRadio = nullptr;
+    QRadioButton* searchByBinaryRadio = nullptr;
     QTreeView* resultTable = nullptr;
     QStatusBar* statusBar = nullptr;
     QProgressBar* progressBar = nullptr;
@@ -46,6 +50,8 @@ private:
 
     QString lastDirPath1;
     QString lastDirPath2;
+
+    int scanMode = 1; // 1 - hash, 2 - binary
 };
 
 #endif // WIDGET_H
