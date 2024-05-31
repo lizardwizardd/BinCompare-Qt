@@ -24,6 +24,7 @@ public:
 
     // Возвращает пары одинаковых файлов
     QVector<QPair<QVector<QString>, size_t>> findDuplicatesByBinary();
+    QVector<QPair<QVector<QString>, size_t>> findDuplicatesByBinaryMultithreaded();
 
 signals:
     void updateProgress(int progress); // прогресс выполнения поиска в процентах

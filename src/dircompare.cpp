@@ -11,6 +11,10 @@
 #include <QString>
 #include <QException>
 #include <QDebug>
+#include <QFuture>
+#include <QtConcurrent/QtConcurrent>
+#include <QThread>
+#include <QAtomicInt>
 
 
 DirCompare::DirCompare(const QString &dirPath1, const QString &dirPath2, const size_t fileSizeFilter)
@@ -71,6 +75,71 @@ QVector<QPair<QVector<QString>, size_t>> DirCompare::findDuplicatesByBinary()
             emit updateProgress(progress);
         }
     }
+
+    return duplicates;
+}
+
+QVector<QPair<QVector<QString>, size_t>> DirCompare::findDuplicatesByBinaryMultithreaded()
+{
+    QVector<QPair<QVector<QString>, size_t>> duplicates;
+    QMutex mutex;
+    QAtomicInt currentOperation(0);
+
+    size_t maxSameSizePairs = 0;
+    for (const auto& file1 : dirFiles1)
+    {
+        for (const auto& file2 : dirFiles2)
+        {
+            if (file1.second == file2.second)
+            {
+                maxSameSizePairs++;
+            }
+        }
+    }
+    duplicates.reserve(maxSameSizePairs);
+
+    const int totalOperations = dirFiles1.size() * dirFiles2.size();
+
+    auto processFiles = [&](QPair<qsizetype, qsizetype> rangePair) {
+        for (qsizetype i = rangePair.first; i < rangePair.second; ++i)
+        {
+            for (qsizetype j = 0; j < dirFiles2.size(); ++j)
+            {
+                currentOperation++;
+
+                if (dirFiles1.at(i).second != dirFiles2.at(j).second)
+                    continue;
+
+                if (compareFilesBinary(dirFiles1[i].first, dirFiles2[j].first))
+                {
+                    QVector<QString> duplicateNames = {dirFiles1[i].first, dirFiles2[j].first};
+
+                    QMutexLocker locker(&mutex);
+                    duplicates.emplace_back(duplicateNames, dirFiles1[i].second);
+                }
+            }
+
+            int progress = static_cast<int>((static_cast<double>(currentOperation._q_value) / totalOperations) * 100);
+            emit updateProgress(progress);
+        }
+    };
+
+    static const int THREAD_COUNT = QThread::idealThreadCount();
+    qsizetype regionSize = dirFiles1.size() / THREAD_COUNT;
+    QVector<QPair<qsizetype, qsizetype>> tasks; // <start index, end index>
+    qsizetype i = 0; // для последнего цикла
+
+    if (regionSize != 0)
+    {
+        for (; i < dirFiles1.size() - regionSize; i += regionSize)
+        {
+            tasks.emplace_back(i, i + regionSize);
+        }
+    }
+
+    QFuture<void> future = QtConcurrent::map(tasks, processFiles);
+    processFiles(qMakePair(i, dirFiles1.size()));
+    future.waitForFinished();
 
     return duplicates;
 }

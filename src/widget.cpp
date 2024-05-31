@@ -5,6 +5,8 @@
 #include <QStandardPaths>
 #include <QFileDialog>
 #include <QStandardItemModel>
+#include <QtConcurrent/QtConcurrent>
+#include <QFuture>
 #include <chrono>
 
 #include "../inc/dircompare.h"
@@ -163,6 +165,7 @@ Widget::Widget(QWidget *parent)
     // Начать сканирование
     connect(startSearchButton, &QPushButton::clicked, this, [this]() {
         searchForDuplicates();
+        progressBar->setValue(100);
     });
 
     connect(exitAction, &QAction::triggered, this, &QWidget::close);
@@ -181,6 +184,7 @@ Widget::Widget(QWidget *parent)
     resultTable->header()->resizeSection(1, 225);
     resultTable->header()->resizeSection(2, 45);
 
+    progressBar->setValue(100);
     updateStatusBar(tr("Ready"));
 }
 
@@ -247,7 +251,6 @@ QAbstractItemModel *Widget::updateDuplicatesTable(const QVector<QPair<QVector<QS
         int sizeKB = fileSize / 1024 + 1;
         model->setData(model->index(row, 2), QString::number(sizeKB) + " KB");
     }
-
     return model;
 }
 
@@ -269,7 +272,14 @@ void Widget::searchForDuplicates()
     connect(&comparator, &DirCompare::updateProgress, this, [this](int value) {
         progressBar->setValue(value);
     });
-    duplicates = comparator.findDuplicatesByBinary();
+    //duplicates = comparator.findDuplicatesByBinaryMultithreaded();
+
+    QFuture<QVector<QPair<QVector<QString>, size_t>>> future = QtConcurrent::run([&comparator]{
+        return comparator.findDuplicatesByBinaryMultithreaded();
+    });
+    future.waitForFinished();
+    duplicates = future.result();
+
     resultTable->setModel(updateDuplicatesTable(duplicates));
 
     auto end = std::chrono::high_resolution_clock::now();
