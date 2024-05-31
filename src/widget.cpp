@@ -244,7 +244,8 @@ QAbstractItemModel *Widget::updateDuplicatesTable(const QVector<QPair<QVector<QS
 
         model->setData(model->index(row, 0), file1);
         model->setData(model->index(row, 1), file2);
-        model->setData(model->index(row, 2), static_cast<qlonglong>(fileSize));
+        int sizeKB = fileSize / 1024 + 1;
+        model->setData(model->index(row, 2), QString::number(sizeKB) + " KB");
     }
 
     return model;
@@ -259,11 +260,15 @@ void Widget::searchForDuplicates()
 {
     auto start = std::chrono::high_resolution_clock::now();
     updateStatusBar(tr("Scanning for duplicate files..."));
+    progressBar->setValue(0);
 
     QVector<QPair<QVector<QString>, size_t>> duplicates;
 
     size_t maxFileSizeBytes = sizeFilterEdit->text().toInt() * 1000000;
     DirCompare comparator(lastDirPath1, lastDirPath2, maxFileSizeBytes);
+    connect(&comparator, &DirCompare::updateProgress, this, [this](int value) {
+        progressBar->setValue(value);
+    });
     duplicates = comparator.findDuplicatesByBinary();
     resultTable->setModel(updateDuplicatesTable(duplicates));
 

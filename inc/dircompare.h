@@ -3,14 +3,17 @@
 #include <QPair>
 #include <QString>
 #include <QVector>
+#include <QObject>
 
 #include <string>
 #include <cstdint>
 #include <vector>
 
 
-class DirCompare
+class DirCompare : public QObject
 {
+    Q_OBJECT
+
 public:
     DirCompare() = default;
     DirCompare(const QString& dirPath1, const QString& dirPath2, const size_t fileSizeFilter = SIZE_MAX);
@@ -21,6 +24,9 @@ public:
 
     // Возвращает пары одинаковых файлов
     QVector<QPair<QVector<QString>, size_t>> findDuplicatesByBinary();
+
+signals:
+    void updateProgress(int progress); // прогресс выполнения поиска в процентах
 
 private:
     QVector<QPair<QString, size_t>> dirFiles1; // <путь, размер>

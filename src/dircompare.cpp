@@ -49,18 +49,26 @@ QVector<QPair<QVector<QString>, size_t>> DirCompare::findDuplicatesByBinary()
 {
     QVector<QPair<QVector<QString>, size_t>> duplicates;
 
-    for (const auto& file1 : dirFiles1)
+    const int totalOperations = dirFiles1.size() * dirFiles2.size();
+    int currentOperation = 0;
+
+    for (int i = 0; i < dirFiles1.size(); ++i)
     {
-        for (const auto& file2 : dirFiles2)
+        for (int j = 0; j < dirFiles2.size(); ++j)
         {
-            if (file1.second != file2.second)
+            currentOperation++;
+
+            if (dirFiles1[i].second != dirFiles2[j].second)
                 continue;
 
-            if (compareFilesBinary(file1.first, file2.first))
+            if (compareFilesBinary(dirFiles1[i].first, dirFiles2[j].first))
             {
-                QVector<QString> duplicateNames = {file1.first, file2.first};
-                duplicates.emplace_back(duplicateNames, file1.second);
+                QVector<QString> duplicateNames = {dirFiles1[i].first, dirFiles2[j].first};
+                duplicates.emplace_back(duplicateNames, dirFiles1[i].second);
             }
+
+            int progress = static_cast<int>((static_cast<double>(currentOperation) / totalOperations) * 100);
+            emit updateProgress(progress);
         }
     }
 
