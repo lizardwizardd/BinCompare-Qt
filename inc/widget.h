@@ -44,6 +44,7 @@ private:
     QTreeView* fileTable1 = nullptr;
     QTreeView* fileTable2 = nullptr;
     QPushButton* startSearchButton = nullptr;
+    QLineEdit* sizeFilterEdit = nullptr;
     QTreeView* resultTable = nullptr;
     QStatusBar* statusBar = nullptr;
     QProgressBar* progressBar = nullptr;

@@ -5,6 +5,7 @@
 #include <QVector>
 
 #include <string>
+#include <cstdint>
 #include <vector>
 
 
@@ -12,10 +13,11 @@ class DirCompare
 {
 public:
     DirCompare() = default;
-    DirCompare(const QString& dirPath1, const QString& dirPath2);
+    DirCompare(const QString& dirPath1, const QString& dirPath2, const size_t fileSizeFilter = SIZE_MAX);
     ~DirCompare() = default;
 
-    void readDirs(const QString& dirPath1, const QString& dirPath2);
+    void readDirs(const QString& dirPath1, const QString& dirPath2, const size_t fileSizeFilter = SIZE_MAX);
+    void setMaxFileSize(const size_t size);
 
     // Возвращает пары одинаковых файлов
     QVector<QPair<QVector<QString>, size_t>> findDuplicatesByBinary();

@@ -5,6 +5,7 @@
 #include <QStandardPaths>
 #include <QFileDialog>
 #include <QStandardItemModel>
+#include <chrono>
 
 #include "../inc/dircompare.h"
 
@@ -71,8 +72,13 @@ Widget::Widget(QWidget *parent)
     fileTable2->setEditTriggers(QAbstractItemView::NoEditTriggers);
 
     // DUPLICATE TABLE CONTROLS
-    startSearchButton = new QPushButton("Scan for duplicates", this);
+    startSearchButton = new QPushButton(tr("Scan for duplicates"), this);
+    QLabel* sizeFilterLabel = new QLabel(tr(" Filter by size (MB)"), this);
+    sizeFilterEdit = new QLineEdit(this);
     startSearchButton->setMinimumWidth(150);
+    sizeFilterEdit->setMaximumWidth(50);
+    sizeFilterEdit->setValidator(new QIntValidator(1, 1000000, this));
+    sizeFilterEdit->setText("1000");
 
     // DUPLICATES TABLE
     resultTable = new QTreeView;
@@ -104,8 +110,12 @@ Widget::Widget(QWidget *parent)
     fileTablesLayout->addWidget(fileTable2);
 
     QHBoxLayout* duplicateControlsLayout = new QHBoxLayout();
+    QSpacerItem* spacerItem = new QSpacerItem(0, 0, QSizePolicy::Expanding, QSizePolicy::Fixed);
     duplicateControlsLayout->addWidget(startSearchButton);
     duplicateControlsLayout->addStretch();
+    duplicateControlsLayout->addWidget(sizeFilterLabel);
+    duplicateControlsLayout->addWidget(sizeFilterEdit);
+    duplicateControlsLayout->addItem(spacerItem);
 
     QVBoxLayout* mainLayout = new QVBoxLayout();
     mainLayout->setMenuBar(menuBar);
@@ -247,13 +257,17 @@ void Widget::updateStatusBar(const QString &message)
 
 void Widget::searchForDuplicates()
 {
+    auto start = std::chrono::high_resolution_clock::now();
     updateStatusBar(tr("Scanning for duplicate files..."));
 
     QVector<QPair<QVector<QString>, size_t>> duplicates;
 
-    DirCompare comparator(lastDirPath1, lastDirPath2);
+    size_t maxFileSizeBytes = sizeFilterEdit->text().toInt() * 1000000;
+    DirCompare comparator(lastDirPath1, lastDirPath2, maxFileSizeBytes);
     duplicates = comparator.findDuplicatesByBinary();
     resultTable->setModel(updateDuplicatesTable(duplicates));
 
-    updateStatusBar(tr("Found %1 pairs of duplicate files").arg(duplicates.size()));
+    auto end = std::chrono::high_resolution_clock::now();
+    auto len = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+    updateStatusBar(tr("Found %1 pairs of duplicates. (%2 ms)").arg(duplicates.size()).arg(len.count()));
 }

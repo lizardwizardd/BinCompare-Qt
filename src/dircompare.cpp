@@ -13,18 +13,22 @@
 #include <QDebug>
 
 
-DirCompare::DirCompare(const QString &dirPath1, const QString &dirPath2)
+DirCompare::DirCompare(const QString &dirPath1, const QString &dirPath2, const size_t fileSizeFilter)
 {
-    readDirs(dirPath1, dirPath2);
+    readDirs(dirPath1, dirPath2, fileSizeFilter);
 }
 
-void DirCompare::readDirs(const QString &dirPath1, const QString &dirPath2)
+void DirCompare::readDirs(const QString &dirPath1, const QString &dirPath2, const size_t fileSizeFilter)
 {
     QDirIterator it1(dirPath1, QDir::Files, QDirIterator::NoIteratorFlags);
     while (it1.hasNext())
     {
         it1.next();
         QFileInfo fileInfo = it1.fileInfo();
+
+        if (fileInfo.size() > fileSizeFilter)
+            continue;
+
         dirFiles1.emplace_back(fileInfo.absoluteFilePath(), fileInfo.size());
     }
 
@@ -33,6 +37,10 @@ void DirCompare::readDirs(const QString &dirPath1, const QString &dirPath2)
     {
         it2.next();
         QFileInfo fileInfo = it2.fileInfo();
+
+        if (fileInfo.size() > fileSizeFilter)
+            continue;
+
         dirFiles2.emplace_back(fileInfo.absoluteFilePath(), fileInfo.size());
     }
 }
