@@ -18,6 +18,7 @@
 #include <QTreeView>
 #include <QAbstractTableModel>
 #include <QRadioButton>
+#include <QCheckBox>
 
 
 class Widget : public QWidget
@@ -44,6 +45,7 @@ private:
     QTreeView* fileTable1 = nullptr;
     QTreeView* fileTable2 = nullptr;
     QPushButton* startSearchButton = nullptr;
+    QCheckBox* searchThreadedСheck = nullptr;
     QLineEdit* sizeFilterEdit = nullptr;
     QTreeView* resultTable = nullptr;
     QStatusBar* statusBar = nullptr;
@@ -52,4 +54,6 @@ private:
 
     QString lastDirPath1;
     QString lastDirPath2;
+
+    bool useMultithreading = false;
 };

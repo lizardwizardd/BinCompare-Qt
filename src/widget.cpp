@@ -23,14 +23,14 @@ Widget::Widget(QWidget *parent)
         (QStandardPaths::writableLocation(QStandardPaths::DownloadLocation));
 
     // MENU BAR
-    QMenuBar *menuBar = new QMenuBar(this);
+    /*QMenuBar *menuBar = new QMenuBar(this);
     QMenu *fileMenu = new QMenu(tr("&Program"), this);
     QMenu *settingsMenu = new QMenu(tr("&Settings"), this); // todo auto update
     menuBar->addMenu(fileMenu);
     menuBar->addMenu(settingsMenu);
 
     QAction *exitAction = new QAction(tr("&Exit"), this);
-    fileMenu->addAction(exitAction);
+    fileMenu->addAction(exitAction);*/
 
 
     // DIR PATHS SELECTION
@@ -49,7 +49,6 @@ Widget::Widget(QWidget *parent)
         (QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation));
     dirPathEdit1 = new QLineEdit(this);
     dirPathEdit1->setText(lastDirPath1);
-    //dirPath1->setReadOnly(true);
     dirPathEdit1->setCompleter(pathCompleter);
     browseButton1 = new QPushButton(tr("Browse"), this);
     browseButton1->setMaximumWidth(60);
@@ -77,15 +76,18 @@ Widget::Widget(QWidget *parent)
     startSearchButton = new QPushButton(tr("Scan for duplicates"), this);
     QLabel* sizeFilterLabel = new QLabel(tr(" Filter by size (MB)"), this);
     sizeFilterEdit = new QLineEdit(this);
+    searchThreadedСheck = new QCheckBox(tr("Multithreading"), this);
     startSearchButton->setMinimumWidth(150);
     sizeFilterEdit->setMaximumWidth(50);
     sizeFilterEdit->setValidator(new QIntValidator(1, 1000000, this));
     sizeFilterEdit->setText("1000");
+    searchThreadedСheck->setChecked(useMultithreading);
 
     // DUPLICATES TABLE
     resultTable = new QTreeView;
     resultTable->setRootIsDecorated(false);
     resultTable->setAlternatingRowColors(true);
+    resultTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
 
     // STATUS BAR
     statusBar = new QStatusBar(this);
@@ -114,13 +116,14 @@ Widget::Widget(QWidget *parent)
     QHBoxLayout* duplicateControlsLayout = new QHBoxLayout();
     QSpacerItem* spacerItem = new QSpacerItem(0, 0, QSizePolicy::Expanding, QSizePolicy::Fixed);
     duplicateControlsLayout->addWidget(startSearchButton);
+    duplicateControlsLayout->addWidget(searchThreadedСheck);
     duplicateControlsLayout->addStretch();
     duplicateControlsLayout->addWidget(sizeFilterLabel);
     duplicateControlsLayout->addWidget(sizeFilterEdit);
     duplicateControlsLayout->addItem(spacerItem);
 
     QVBoxLayout* mainLayout = new QVBoxLayout();
-    mainLayout->setMenuBar(menuBar);
+    //mainLayout->setMenuBar(menuBar);
     mainLayout->addLayout(dirBrowseLayoutV);
     mainLayout->addLayout(fileTablesLayout, 2);
     mainLayout->addLayout(duplicateControlsLayout);
@@ -162,13 +165,18 @@ Widget::Widget(QWidget *parent)
         lastDirPath2 = dirPathEdit2->text();
     });
 
+    // Разделение по потокам при поиске копий
+    connect(searchThreadedСheck, &QCheckBox::stateChanged, this, [this]() {
+        useMultithreading = searchThreadedСheck->isChecked();
+    });
+
     // Начать сканирование
     connect(startSearchButton, &QPushButton::clicked, this, [this]() {
         searchForDuplicates();
         progressBar->setValue(100);
     });
 
-    connect(exitAction, &QAction::triggered, this, &QWidget::close);
+    //connect(exitAction, &QAction::triggered, this, &QWidget::close);
 
     // INITIALIZE TABLES
     fileTable1->setModel(updateFileTable(dirPathEdit1->text()));
@@ -184,7 +192,7 @@ Widget::Widget(QWidget *parent)
     resultTable->header()->resizeSection(1, 225);
     resultTable->header()->resizeSection(2, 45);
 
-    progressBar->setValue(100);
+    progressBar->setValue(0);
     updateStatusBar(tr("Ready"));
 }
 
@@ -272,13 +280,20 @@ void Widget::searchForDuplicates()
     connect(&comparator, &DirCompare::updateProgress, this, [this](int value) {
         progressBar->setValue(value);
     });
-    //duplicates = comparator.findDuplicatesByBinaryMultithreaded();
 
-    QFuture<QVector<QPair<QVector<QString>, size_t>>> future = QtConcurrent::run([&comparator]{
-        return comparator.findDuplicatesByBinaryMultithreaded();
-    });
-    future.waitForFinished();
-    duplicates = future.result();
+    if (searchThreadedСheck->isChecked())
+    {
+        QFuture<QVector<QPair<QVector<QString>, size_t>>> future = QtConcurrent::run([&comparator]{
+            return comparator.findDuplicatesByBinaryMultithreaded();
+        });
+        future.waitForFinished();
+        duplicates = future.result();
+    }
+    else
+    {
+        duplicates = comparator.findDuplicatesByBinary();
+    }
+
 
     resultTable->setModel(updateDuplicatesTable(duplicates));
 
