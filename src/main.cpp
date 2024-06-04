@@ -4,11 +4,13 @@
 #include <QTranslator>
 
 #include "../inc/dircompare.h"
+#include "../inc/tableupdater.h"
 
 int main(int argc, char *argv[])
 {
     QGuiApplication a(argc, argv);
     qmlRegisterType<DirCompare>("my.dircompare", 1, 0, "DirCompare");
+    qmlRegisterType<TableUpdater>("my.tableupdater", 1, 0, "TableUpdater");
 
     QQmlApplicationEngine engine;
     const QUrl url(QStringLiteral("qrc:/BinCompare/qml/widget.qml"));

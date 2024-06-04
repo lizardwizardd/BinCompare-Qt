@@ -5,6 +5,7 @@ import QtQuick.Layouts
 import QtQuick.Controls
 import QtQuick.Dialogs
 import my.dircompare 1.0
+import my.tableupdater 1.0
 
 Window {
     title: "BinCompare"
@@ -21,7 +22,7 @@ Window {
 
         // DIRECTORY PATHS
         Text {
-            text: "Enter paths or browse for directories"
+            text: "Browse for directories to compare"
             Layout.alignment: Qt.AlignLeft
             Layout.topMargin: 5
             Layout.leftMargin: 10
@@ -38,6 +39,7 @@ Window {
                 leftPadding: 3
                 topPadding: 3
                 bottomPadding: 3
+                readOnly: true
 
                 Layout.fillWidth: true
             }
@@ -46,6 +48,7 @@ Window {
                 leftPadding: 10
                 rightPadding: 10
                 onClicked: {
+                    statusText.text = "Browsing for directory"
                     dirPathDialog1.open()
                 }
             }
@@ -55,6 +58,7 @@ Window {
                 leftPadding: 3
                 topPadding: 3
                 bottomPadding: 3
+                readOnly: true
 
                 Layout.fillWidth: true
             }
@@ -63,6 +67,7 @@ Window {
                 leftPadding: 10
                 rightPadding: 10
                 onClicked: {
+                    statusText.text = "Browsing for directory"
                     dirPathDialog2.open()
                 }
             }
@@ -78,11 +83,17 @@ Window {
             Layout.fillHeight: true
             Layout.verticalStretchFactor: 3
 
-            TableView {
+            TreeView {
+                id: fileTable1
+                columnSpacing: 1
+                rowSpacing: 1
                 Layout.fillWidth: true
                 Layout.fillHeight: true
             }
-            TableView {
+            TreeView  {
+                id: fileTable2
+                columnSpacing: 1
+                rowSpacing: 1
                 Layout.fillWidth: true
                 Layout.fillHeight: true
             }
@@ -100,7 +111,7 @@ Window {
                 leftPadding: 10
                 rightPadding: 10
                 onClicked: {
-                    false
+                    resultTable.model = tableUpdater.updateDuplicatesTable(dirPathEdit1.text, dirPathEdit2.text, sizeFilterEdit.text, searchThreadedCheck.checked)
                 }
             }
 
@@ -141,7 +152,7 @@ Window {
         // STATUS BAR
         RowLayout {
             spacing: 5
-            Layout.alignment: Qt.AlignHCenter
+            Layout.alignment: Qt.AlignRight
 
             Text {
                 id: statusText
@@ -158,9 +169,12 @@ Window {
         }
     }
 
-    DirCompare {
-        id: dirCompare
-        onUpdateProgress: {
+    TableUpdater {
+        id: tableUpdater
+        onUpdateStatusBar: {
+            statusText.text = message
+        }
+        onUpdateProgressBar: {
             progressBar.value = progress
         }
     }
@@ -173,7 +187,12 @@ Window {
         onAccepted: {
             dirPathEdit1.text = dirPathDialog1.selectedFolder
             lastDirPath1 = dirPathDialog1.selectedFolder
-
+	    // DOESNT WORK
+            fileTable1.model = tableUpdater.updateFileTable(dirPathEdit1.text)
+            statusText.text = "Directory changed. Ready"
+        }
+        onRejected: {
+            statusText.text = "Browse dialog closed. Ready"
         }
     }
 
@@ -185,6 +204,12 @@ Window {
         onAccepted: {
             dirPathEdit2.text = dirPathDialog2.selectedFolder
             lastDirPath2 = dirPathDialog2.selectedFolder
+	    // DOESNT WORK
+            fileTable2.model = tableUpdater.updateFileTable(dirPathEdit2.text)
+            statusText.text = "Directory changed. Ready"
+        }
+        onRejected: {
+            statusText.text = "Browse dialog closed. Ready"
         }
     }
 }

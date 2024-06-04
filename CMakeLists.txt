@@ -21,9 +21,11 @@ set(PROJECT_SOURCES
         src/main.cpp
         src/widget.cpp
         src/dircompare.cpp
+        src/tableupdater.cpp
 
         inc/widget.h
         inc/dircompare.h
+        inc/tableupdater.h
 
         ts/${TS_FILES}
 )
