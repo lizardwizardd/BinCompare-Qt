@@ -22,17 +22,6 @@ Widget::Widget(QWidget *parent)
     lastDirPath2 = QDir::toNativeSeparators
         (QStandardPaths::writableLocation(QStandardPaths::DownloadLocation));
 
-    // MENU BAR
-    /*QMenuBar *menuBar = new QMenuBar(this);
-    QMenu *fileMenu = new QMenu(tr("&Program"), this);
-    QMenu *settingsMenu = new QMenu(tr("&Settings"), this); // todo auto update
-    menuBar->addMenu(fileMenu);
-    menuBar->addMenu(settingsMenu);
-
-    QAction *exitAction = new QAction(tr("&Exit"), this);
-    fileMenu->addAction(exitAction);*/
-
-
     // DIR PATHS SELECTION
     QLabel* dirPathLabel = new QLabel(tr("Enter paths or browse for directories"), this);
 

@@ -9,10 +9,13 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+find_package(Qt6 6.4 REQUIRED COMPONENTS Qml)
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets LinguistTools Concurrent)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets LinguistTools Concurrent)
 
 set(TS_FILES BinCompare_ru_RU.ts)
+
+qt_standard_project_setup()
 
 set(PROJECT_SOURCES
         src/main.cpp
@@ -25,29 +28,26 @@ set(PROJECT_SOURCES
         ts/${TS_FILES}
 )
 
-if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
-    qt_add_executable(BinCompare
-        MANUAL_FINALIZATION
-        ${PROJECT_SOURCES}
-    )
-    qt_create_translation(QM_FILES ${CMAKE_SOURCE_DIR} ${TS_FILES})
-else()
-    if(ANDROID)
-        add_library(BinCompare SHARED
-            ${PROJECT_SOURCES}
-        )
-    else()
-        add_executable(BinCompare
-            ${PROJECT_SOURCES}
-        )
-    endif()
+qt_add_executable(BinCompare
+    MANUAL_FINALIZATION
+    ${PROJECT_SOURCES}
+)
+qt_create_translation(QM_FILES ${CMAKE_SOURCE_DIR} ${TS_FILES})
 
-    qt5_create_translation(QM_FILES ${CMAKE_SOURCE_DIR} ${TS_FILES})
-endif()
+# QT Quick
+qt_policy(SET QTP0001 OLD)
+
+qt_add_qml_module(BinCompare
+    URI BinCompare
+    VERSION 1.0
+    QML_FILES qml/widget.qml
+)
+#
 
 target_link_libraries(BinCompare PRIVATE
     Qt${QT_VERSION_MAJOR}::Widgets
     Qt${QT_VERSION_MAJOR}::Concurrent
+    Qt6::Qml
 )
 
 set_target_properties(BinCompare PROPERTIES

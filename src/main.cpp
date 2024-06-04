@@ -1,27 +1,21 @@
-#include "../inc/widget.h"
-
-#include <QApplication>
+#include <QGuiApplication>
+#include <QQmlApplicationEngine>
 #include <QLocale>
 #include <QTranslator>
 
+#include "../inc/dircompare.h"
 
 int main(int argc, char *argv[])
 {
-    QApplication a(argc, argv);
+    QGuiApplication a(argc, argv);
+    qmlRegisterType<DirCompare>("my.dircompare", 1, 0, "DirCompare");
 
-    /*
-    QTranslator translator;
-    const QStringList uiLanguages = QLocale::system().uiLanguages();
-    for (const QString &locale : uiLanguages) {
-        const QString baseName = "BinCompare_" + QLocale(locale).name();
-        if (translator.load(":/i18n/" + baseName)) {
-            a.installTranslator(&translator);
-            break;
-        }
-    }
-    */
+    QQmlApplicationEngine engine;
+    const QUrl url(QStringLiteral("qrc:/BinCompare/qml/widget.qml"));
+    QObject::connect(&engine, &QQmlApplicationEngine::objectCreationFailed,
+        &a, []() { QCoreApplication::exit(-1); },
+        Qt::QueuedConnection);
+    engine.load(url);
 
-    Widget w;
-    w.show();
     return a.exec();
 }
