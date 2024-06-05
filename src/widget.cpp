@@ -1,3 +1,4 @@
+/*
 #include "../inc/widget.h"
 
 #include <QCommonStyle>
@@ -290,3 +291,4 @@ void Widget::searchForDuplicates()
     auto len = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
     updateStatusBar(tr("Found %1 pairs of duplicates. (%2 ms)").arg(duplicates.size()).arg(len.count()));
 }
+*/

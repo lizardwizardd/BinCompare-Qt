@@ -82,7 +82,6 @@ QVector<QPair<QVector<QString>, size_t>> DirCompare::findDuplicatesByBinary()
 QVector<QPair<QVector<QString>, size_t>> DirCompare::findDuplicatesByBinaryMultithreaded()
 {
     QVector<QPair<QVector<QString>, size_t>> duplicates;
-    QMutex mutex;
     QAtomicInt currentOperation(0);
 
     size_t maxSameSizePairs = 0;
@@ -100,7 +99,9 @@ QVector<QPair<QVector<QString>, size_t>> DirCompare::findDuplicatesByBinaryMulti
 
     const int totalOperations = dirFiles1.size() * dirFiles2.size();
 
-    auto processFiles = [&](QPair<qsizetype, qsizetype> rangePair) {
+    // Возвращает вектор с идентичными файлами в заданном промежут
+    auto processFiles = [&](QPair<qsizetype, qsizetype> rangePair) -> QVector<QPair<QVector<QString>, size_t>> {
+        QVector<QPair<QVector<QString>, size_t>> duplicatesFound;
         for (qsizetype i = rangePair.first; i < rangePair.second; ++i)
         {
             for (qsizetype j = 0; j < dirFiles2.size(); ++j)
@@ -113,33 +114,35 @@ QVector<QPair<QVector<QString>, size_t>> DirCompare::findDuplicatesByBinaryMulti
                 if (compareFilesBinary(dirFiles1[i].first, dirFiles2[j].first))
                 {
                     QVector<QString> duplicateNames = {dirFiles1[i].first, dirFiles2[j].first};
-
-                    QMutexLocker locker(&mutex);
-                    duplicates.emplace_back(duplicateNames, dirFiles1[i].second);
+                    duplicatesFound.emplace_back(duplicateNames, dirFiles1[i].second);
                 }
             }
 
             int progress = static_cast<int>((static_cast<double>(currentOperation._q_value) / totalOperations) * 100);
             emit updateProgress(progress);
         }
+        return duplicatesFound;
     };
 
     static const int THREAD_COUNT = QThread::idealThreadCount();
     qsizetype regionSize = dirFiles1.size() / THREAD_COUNT;
-    QVector<QPair<qsizetype, qsizetype>> tasks; // <start index, end index>
-    qsizetype i = 0; // для последнего цикла
+    QVector<QFuture<QVector<QPair<QVector<QString>, size_t>>>> futures;
 
+    qsizetype i = 0; // для последнего цикла
     if (regionSize != 0)
     {
         for (; i < dirFiles1.size() - regionSize; i += regionSize)
         {
-            tasks.emplace_back(i, i + regionSize);
+            futures.append(QtConcurrent::run(processFiles, qMakePair(i, i + regionSize)));
         }
     }
+    futures.append(QtConcurrent::run(processFiles, qMakePair(i, dirFiles1.size())));
 
-    QFuture<void> future = QtConcurrent::map(tasks, processFiles);
-    processFiles(qMakePair(i, dirFiles1.size()));
-    future.waitForFinished();
+    for (auto &future : futures)
+    {
+        future.waitForFinished();
+        duplicates.append(future.result());
+    }
 
     return duplicates;
 }

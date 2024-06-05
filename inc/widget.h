@@ -1,3 +1,4 @@
+/*
 #pragma once
 
 #include <QWidget>
@@ -57,3 +58,4 @@ private:
 
     bool useMultithreading = false;
 };
+*/
