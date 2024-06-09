@@ -4,7 +4,7 @@ import QtQuick.Window
 import QtQuick.Layouts
 import QtQuick.Controls
 import QtQuick.Dialogs
-import my.dircompare 1.0
+import Qt.labs.qmlmodels 1.0
 import my.tableupdater 1.0
 
 Window {
@@ -16,6 +16,12 @@ Window {
 
     property string lastDirPath1: StandardPaths.writableLocation(StandardPaths.DocumentsLocation)
     property string lastDirPath2: StandardPaths.writableLocation(StandardPaths.DownloadLocation)
+
+    Component.onCompleted: {
+        fileTable1.model = tableUpdater.updateFileTable(dirPathEdit1.text)
+        fileTable2.model = tableUpdater.updateFileTable(dirPathEdit2.text)
+        statusText.text = "Ready"
+    }
 
     ColumnLayout {
         anchors.fill: parent
@@ -83,19 +89,74 @@ Window {
             Layout.fillHeight: true
             Layout.verticalStretchFactor: 3
 
-            TreeView {
+            TableView {
                 id: fileTable1
                 columnSpacing: 1
                 rowSpacing: 1
+                boundsBehavior: Flickable.StopAtBounds
+                clip: true
                 Layout.fillWidth: true
                 Layout.fillHeight: true
+
+                columnWidthProvider: function(column) {
+                    if (column === 0) {
+                        return fileTable1.width * 0.8 - 1
+                    }
+                    if (column === 1) {
+                        return fileTable1.width * 0.2 - 1
+                    }
+                    return 100;
+                }
+
+                rowHeightProvider: function(row) {
+                    return 23
+                }
+
+                delegate: Rectangle {
+                    implicitWidth: 150
+                    implicitHeight: 50
+                    Text {
+                        text: display
+                        elide: Text.ElideRight
+                        width: parent.width
+                        padding: 3
+                    }
+                }
             }
-            TreeView  {
+            TableView  {
                 id: fileTable2
                 columnSpacing: 1
                 rowSpacing: 1
+                boundsBehavior: Flickable.StopAtBounds
+                clip: true
                 Layout.fillWidth: true
                 Layout.fillHeight: true
+
+
+                columnWidthProvider: function(column) {
+                    if (column === 0) {
+                        return fileTable1.width * 0.8 - 1
+                    }
+                    if (column === 1) {
+                        return fileTable1.width * 0.2 - 1
+                    }
+                    return 100;
+                }
+
+                rowHeightProvider: function(row) {
+                    return 23
+                }
+
+                delegate: Rectangle {
+                    implicitWidth: 150
+                    implicitHeight: 50
+                    Text {
+                        text: display
+                        elide: Text.ElideRight
+                        width: parent.width
+                        padding: 3
+                    }
+                }
             }
         }
 
@@ -111,7 +172,8 @@ Window {
                 leftPadding: 10
                 rightPadding: 10
                 onClicked: {
-                    resultTable.model = tableUpdater.updateDuplicatesTable(dirPathEdit1.text, dirPathEdit2.text, sizeFilterEdit.text, searchThreadedCheck.checked)
+                    resultTable.model = tableUpdater.updateDuplicatesTable
+                            (dirPathEdit1.text, dirPathEdit2.text, sizeFilterEdit.text, searchThreadedCheck.checked)
                 }
             }
 
@@ -144,9 +206,39 @@ Window {
         // SEARCH RESULT TABLE
         TableView {
             id: resultTable
+            columnSpacing: 1
+            rowSpacing: 1
+            boundsBehavior: Flickable.StopAtBounds
+            clip: true
             Layout.fillWidth: true
             Layout.fillHeight: true
             Layout.verticalStretchFactor: 4
+            Layout.leftMargin: 10
+            Layout.rightMargin: 10
+
+            columnWidthProvider: function(column) {
+                if (column === 0 || column === 1) {
+                    return resultTable.width * 0.45 - 1
+                } else if (column === 2) {
+                    return resultTable.width * 0.1 - 1
+                }
+                return 100;
+            }
+
+            rowHeightProvider: function(row) {
+                return 25
+            }
+
+            delegate: Rectangle {
+                implicitWidth: 150
+                implicitHeight: 50
+                Text {
+                    text: display
+                    elide: Text.ElideRight
+                    width: parent.width
+                    padding: 3
+                }
+            }
         }
 
         // STATUS BAR
@@ -187,7 +279,6 @@ Window {
         onAccepted: {
             dirPathEdit1.text = dirPathDialog1.selectedFolder
             lastDirPath1 = dirPathDialog1.selectedFolder
-	    // DOESNT WORK
             fileTable1.model = tableUpdater.updateFileTable(dirPathEdit1.text)
             statusText.text = "Directory changed. Ready"
         }
@@ -204,7 +295,6 @@ Window {
         onAccepted: {
             dirPathEdit2.text = dirPathDialog2.selectedFolder
             lastDirPath2 = dirPathDialog2.selectedFolder
-	    // DOESNT WORK
             fileTable2.model = tableUpdater.updateFileTable(dirPathEdit2.text)
             statusText.text = "Directory changed. Ready"
         }

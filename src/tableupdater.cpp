@@ -112,6 +112,7 @@ QAbstractItemModel* TableUpdater::updateDuplicatesTable(const QString& dir1, con
     auto end = std::chrono::high_resolution_clock::now();
     auto len = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
     emit updateStatusBar(tr("Found %1 pairs of duplicates. (%2 ms)").arg(duplicates.size()).arg(len.count()));
+    emit updateProgressBar(100);
 
     return model;
 }
